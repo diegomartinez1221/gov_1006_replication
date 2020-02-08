@@ -1,0 +1,14 @@
+---
+title: "milestone_1"
+author: "Diego Martinez"
+date: "2/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Link to Research Paper - https://www.stat.berkeley.edu/~aldous/157/Papers/albert_streaky.pdf
+  
+The research paper I am considering replicating is Streaky Hitting in Baseball by Jim Albert that was published in the Journal of Quantitative Analysis in Sports. The research project uses a consistent-p model, using p-values as a measure the extremeness of a player’s streaky statistic. The topic of streakiness has steered much debate over the years and I am particularly interested by the methods by which Albert uses to analyze them. The data and code is not provided, but I have emailed Jim Albert asking for them both. 
