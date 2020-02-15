@@ -1,0 +1,30 @@
+---
+title: "milestone_2"
+author: "Diego Martinez"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(dplyr)
+salaries <- read_csv("lahman-csv_2014-02-14/Salaries.csv")
+```
+
+[Link to research paper](https://scholarworks.smith.edu/cgi/viewcontent.cgi?article=1021&context=mth_facpubs)
+
+
+[Link to Github repo](https://github.com/diegomartinez1221/gov_1006_replication)
+
+I do like this paper a lot. I however am still hoping to hear back about data for another paper, but would be more than willing to replicate this paper if it is up to standards. The data for this research paper comes from the [Lahman Database](http://www.seanlahman.com/baseball-archive/statistics/) from 2013. I downloaded the data from online and stored it in my directory. There are many .csv's that come this the data. Since this paper focuses on Market Inefficiencies I decided to take a look at the Salary data for this milestone.
+
+
+
+
+
+```{r}
+summary(salaries)
+```
+
