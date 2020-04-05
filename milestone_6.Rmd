@@ -236,6 +236,36 @@ stargazer(header = FALSE,
 ### Figure 1
 
 
+### Create useful functions
+
+## Function to get predicted levels for different treatment combinations
+predict.rob <- function(object, vcov,newdata){
+  tt <- terms(object)
+  if(missing(newdata)){ newdata <- x$model }
+  else {
+    Terms <- delete.response(tt)
+    m <- model.frame(Terms, newdata, na.action = na.pass, 
+                     xlev = object$xlevels)
+    if (!is.null(cl <- attr(Terms, "dataClasses"))) 
+      .checkMFClasses(cl, m)
+    X <- model.matrix(Terms, m, contrasts.arg = object$contrasts)
+    offset <- rep(0, nrow(X))
+    if (!is.null(off.num <- attr(tt, "offset"))) 
+      for (i in off.num) offset <- offset + eval(attr(tt, 
+                                                      "variables")[[i + 1]], newdata)
+    if (!is.null(object$call$offset)) 
+      offset <- offset + eval(object$call$offset, newdata)
+    mmDone <- FALSE
+  }
+  #m.mat <- model.matrix(x$terms,data=newdata)
+  m.coef <- object$coef
+  fit <- as.vector(X %*% object$coef)
+  se.fit <- sqrt(diag(X%*%vcov%*%t(X)))
+  return(list(fit=fit,se.fit=se.fit))
+}
+
+
+
 ## Avg treatment effect of local roots with const and westmihn. info
 out <- summary(margins(m4, vcov = vcovHC(m4), 
                        at = list(behtreat = c("No behavioural info", "Const. focus", "Westmin. focus"))))
@@ -325,7 +355,7 @@ pcomb
 ```
 
 ##Figure 2
-```{r}
+```{r figure 2 functions}
 add.top <- function(df, new.level){
   to.add <- data.frame(mean = c(NA,NA, 0), ci.lo = c(NA,NA, 0), ci.hi = c(NA,NA, 0),
                        category = rep("", 3), attribute = rep(df$attribute[1],3),
@@ -436,7 +466,7 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
 ```
 
 
-```{r, message=FALSE, warning=FALSE}
+```{r figure 2 graph, message=FALSE, warning=FALSE}
 ### Load in Study 2 data 
 
 long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
