@@ -1,0 +1,6 @@
+ccvw_replication_study1.R (type/x-r-syntax) 22864 bytes.
+ccvw_replication_study2.R (type/x-r-syntax) 26901 bytes.
+readme.txt (text/plain) 1057 bytes.
+study1data.rds (application/warc) 155515 bytes.
+study2data_long.rds (application/warc) 232658 bytes.
+study2data_wide.rds (application/warc) 206264 bytes.
