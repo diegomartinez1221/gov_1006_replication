@@ -15,6 +15,8 @@ This is my pdf document for milestone 6 of Gov 1006 Final Project. Please refer 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
+# With the time constrictions due to swithcing papers, I was not able to comment
+# all of the replication code. I did comment areas I did need to make changes.
 
 library(bookdown)
 library(dplyr)
@@ -126,7 +128,7 @@ I am unsure about specific extensions for study 2. Following along the same line
 # Replication Appendix 
 
 I recreate all the important graphs and tables as specified by Milestone 6. 
-```{r}
+```{r, table 1 setup}
 # Replication code for Study 1 in 
 # Campbell, R., Cowley, P., Vivyan, N & Wagner, M. 
 # 'Why friends and neighbors? Explaining the electoral appeal of local roots'.
@@ -139,6 +141,11 @@ d <- readRDS("./friends_neighbors_replication/study1data.rds")
 
 
 ### Table 2
+
+# The authors created various different models of the data. These models are
+# displayed in table 1 of the paper and model 4 is used throughout the paper.
+# The authors same the results of the models and the errors in separate objects
+# so that they can all be called togethered to create a stargazer table
 
 m1 <- lm(nickminusphil ~ localtreat*behtreatsimple, data = d)
 
@@ -160,14 +167,37 @@ se4 <- sqrt(diag(vcovHC(m4)))
 
 ## Table 1
 (also fulfills reproducing a table needed for Milestone 5)
-```{r, results="asis", message=FALSE, comment=FALSE}
+```{r table 1, results="asis", message=FALSE, comment=FALSE}
 ## Output to table
-stargazer(header = FALSE, mget(paste0("m",1:4)),
+
+# I needed to change/add many things to the original to get a more similar table
+# to the one that apppars in the paper. 
+
+stargazer(header = FALSE, 
+          
+          # calling all the linear models and errors created in teh previous chunk. 
+          
+          mget(paste0("m",1:4)),
           se = mget(paste0("se",1:4)),
+          
+          # latex was the only kind I could get to output in the pdf. It was
+          # orignally type html
+          
           type = "latex",
+          
+          # needed to add the title myself as well. 
+          
           title = " Relative Ratings of MP Nick by Local Roots and Behavioral Information Treatments in Study", 
+          
+          # Could not find another way to add the two separations visible in
+          # the table model. I needed to use these latex commands combined with
+          # column.separate.
+          
           column.labels=c('\\shortstack{Conditioning Effect of Any Behavioral\\\\ Localism Information}', '\\shortstack{Separate Conditioning Effects for\\\\ High and Low Behavioral Localism}'),
           column.separate = c(2,2),
+          
+          # both of these are needed to erase the dependent variable 
+          
           dep.var.labels.include = FALSE,
           dep.var.caption = "",
           #intercept.bottom = FALSE, intercept.top = TRUE,
@@ -189,6 +219,11 @@ stargazer(header = FALSE, mget(paste0("m",1:4)),
                                "Local roots X Behavioral info.", 
                                "Local roots X High behavioral localism",
                                "Local roots X Low behavioral localism"),
+          
+          # The notes section was not originally included in the replication
+          # code. I was able to create something similar using the latex
+          # commends, but it is not an exact match
+          
        notes.append = FALSE, notes.align = "l",
       notes.label  = "\\multicolumn{5}{l}{\\parbox[t]{\\textwidth}{Note. All models estimated via ordinary least squares. Dependent variable is respondent relative rating of MP Nick (the 0–10 rating of Nick minus that of Philip). Robust standard errors in parentheses. N p 5,203.}}\\\\"
 )
@@ -197,7 +232,7 @@ stargazer(header = FALSE, mget(paste0("m",1:4)),
 
 ##Figure 1
 
-```{r, cache=TRUE}
+```{r figure 1, cache=TRUE}
 ### Figure 1
 
 
