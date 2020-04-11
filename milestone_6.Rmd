@@ -235,20 +235,52 @@ stargazer(header = FALSE,
 ```{r figure 1, cache=TRUE}
 ### Figure 1
 
-
 ### Create useful functions
 
-## Function to get predicted levels for different treatment combinations
+## Function to get predicted levels for different treatment combinations.
+
+
+# function to make predictions from the linear regression on a person with
+# different attributes. very much like postior_linpred.the Inputs for the
+# function are a regression object, covariate matrix for all the vairables in
+# the regression object, and the new data to perform predictions.
+
 predict.rob <- function(object, vcov,newdata){
+  
+  # extracting info from the regression object
+  
   tt <- terms(object)
+  
+  # check to make sure that the user input a new dataset
+  
   if(missing(newdata)){ newdata <- x$model }
   else {
+    
+    # takes the response variable, the y, out of the terms object
+    
     Terms <- delete.response(tt)
+    
+    # creates a dataframe were all the variables are constant save the local
+    # treatment and behavioral treatment. Each row of the matrix is a different
+    # combination of the two treatments.
+    
     m <- model.frame(Terms, newdata, na.action = na.pass, 
                      xlev = object$xlevels)
     if (!is.null(cl <- attr(Terms, "dataClasses"))) 
       .checkMFClasses(cl, m)
+    
+    # turns the dataframe m into a dataframe of 1's and 0's for each row of m.
+    # This now resembles how m will be fed into a regresson. For example the
+    # Intercept is 1 for every row. However, for rows of m where there was an
+    # interactions, the value will be 1 and when the interaction did not take
+    # place, there will be a 0. Thus, it is a sort of expanded version of the
+    # regression equation.
+    
     X <- model.matrix(Terms, m, contrasts.arg = object$contrasts)
+    
+    # checks for if any of the variables are NULL from the original m matrix.
+    # this adds in 0's for those instances where there are NULLs.
+    
     offset <- rep(0, nrow(X))
     if (!is.null(off.num <- attr(tt, "offset"))) 
       for (i in off.num) offset <- offset + eval(attr(tt, 
@@ -258,15 +290,33 @@ predict.rob <- function(object, vcov,newdata){
     mmDone <- FALSE
   }
   #m.mat <- model.matrix(x$terms,data=newdata)
+  
+  # saving the coefficients from the model 
+  
   m.coef <- object$coef
+  
+  # performing matrix multiplication to get the predicted value for each row,
+  # which is each a set person with set attributes experiencing each of the
+  # different treatments. Also does the same for the standard erorrs. 
+  
   fit <- as.vector(X %*% object$coef)
   se.fit <- sqrt(diag(X%*%vcov%*%t(X)))
+  
+  # finally the function combines the results of fit and se.fit to lists as the
+  # output.
+  
   return(list(fit=fit,se.fit=se.fit))
 }
 
 
+## author: Avg treatment effect of local roots with const and westmihn. info
 
-## Avg treatment effect of local roots with const and westmihn. info
+# the margins command will collect the average treatment effect for each of the
+# covaraites at every level of behavioral info. This is the crux of the
+# analysis. The one that is important to us is the avg effect for
+# localtreatLocal roots. Thus subetting to only keep the effects when local
+# treatment interacts with the levels of behavioral info.
+
 out <- summary(margins(m4, vcov = vcovHC(m4), 
                        at = list(behtreat = c("No behavioural info", "Const. focus", "Westmin. focus"))))
 out <- subset(out, factor == "localtreatLocal roots")
@@ -275,6 +325,10 @@ margins.m4 <- out
 
 ## make margins plot
 margins.comb <- margins.m4
+
+# changing the variables to be more informative in the graphic. Most were
+# abbreviated to save space in the original dataset
+
 margins.comb$behtreat.neat <- car:::recode(margins.comb$behtreat, 
                                            '"No behavioural info" = "Behavioral information treatment --\\nNo information (Vignettes 1-2)";
                                            "Westmin. focus" = "Behavioral information treatment --\\nLow behavioral localism (Vignettes 5-6)";
@@ -285,19 +339,59 @@ margins.comb$behtreat.neat <- factor(sub(" --", ":", margins.comb$behtreat.neat)
                                                 "Behavioral information treatment:\nLow behavioral localism (Vignettes 5-6)",
                                                 "Behavioral information treatment:\nHigh behavioral localism (Vignettes 3-4)"
                                      ))
-p1 <- ggplot(margins.comb, aes(x = factor, y = AME)) + 
+
+# the first grahic has two parts that are set side by side. Thus, it is
+# necessary to save the plot into an object p1.
+
+p1 <-
+  
+  # plotting the average treatment effect when a candidate is local for each
+  # level of behavioral info; however behavioral info is not yet incorporated
+  # into the graph.
+  
+  ggplot(margins.comb, aes(x = factor, y = AME)) + 
+  
+  # line at 0 to show all are results are significant
+  
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
+  
+  # show range of the effect 
+  
   geom_linerange(aes(x=factor, ymin=lower, ymax=upper), size = 0.6) +
+  
+  # point estimate for the averages 
+  
   geom_point(size = 3.5, shape = 21, fill = "white") +
   labs(x = "", y = "") + 
+  
+  # flipping the coordinates because factors is currently all the same. Also
+  # aesthetically more pleasing to go horizontally
+  
   coord_flip() +
+  
+  # needing the facet wrap to add the info for each of the behavioral levels.
+  # Currently everything was graphed on same axis and the lines were on top of
+  # each other. This separates the treatment into each combo of local roots with
+  # behavioral roots.
+  
   facet_wrap( ~ behtreat.neat, ncol = 1) + 
+  
+  # manipulating aesthetics and adding a title for the final output.
+  
   theme_bw() +
   theme(legend.position = "bottom") +
   theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) + 
   ggtitle("(b) Effect of MP local roots \ntreatment") 
 
 ## predlevels for m4
+
+# dataframe created for predictions for the predict.rob function we made
+# earlier. The table will consistent of a combinations of all local roots and
+# behavioral treatments levels (2,3 so 6 row in total). The table then then is
+# filled with the most common value for each of the voter characterstics (most
+# common age, gender...). Thus the table is one of the treatments effects on the
+# most common of individual from the sample.
+
 newdf <- data.frame(expand.grid(localtreat = factor(c("No local roots", "Local roots"), 
                                                     levels = levels(d$localtreat)),
                                 behtreat = factor(levels(d$behtreat), levels = levels(d$behtreat))
@@ -311,6 +405,12 @@ socgrade = factor(levels(d$socgrade)[which.max(table(d$socgrade))],
 qual = factor(levels(d$qual)[which.max(table(d$qual))], 
               levels = levels(d$qual))
 )
+
+# using the function created above to get predictions for each of the rows of
+# newdf. The output of pred.rob saved in preds is a list. The next step is
+# adding those values into the newdf dataframe to make the second part of
+# graphic 1.
+
 preds <- predict.rob(m4, vcov = vcovHC(m4), newdata = newdf)
 newdf$yhat <- preds$fit
 newdf$se.yhat <- preds$se.fit
@@ -320,6 +420,10 @@ predlevels.m4 <- newdf
 
 
 ## make predlevels plot
+
+# releveling the variables to be more informative in the graphic. Most were
+# abbreviated to save space in the original dataset
+
 predlevels.comb <- predlevels.m4
 predlevels.comb$behtreat.neat <- car:::recode(predlevels.comb$behtreat, 
                                               '"No behavioural info" = "Behavioral information treatment --\\nNo information (Vignettes 1-2)";
@@ -331,6 +435,9 @@ predlevels.comb$behtreat.neat <- factor(sub(" --", ":", predlevels.comb$behtreat
                                                    "Behavioral information treatment:\nLow behavioral localism (Vignettes 5-6)",
                                                    "Behavioral information treatment:\nHigh behavioral localism (Vignettes 3-4)"
                                         ))
+# second plot is pretty much identical to the first plot created. This one is
+# just with predicted values for the most common voter profile instead of real
+# data.
 
 p2 <- ggplot(predlevels.comb, aes(x = localtreat, y = yhat)) + 
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
@@ -344,10 +451,9 @@ p2 <- ggplot(predlevels.comb, aes(x = localtreat, y = yhat)) +
   labs(title = "(a) Predicted relative rating")
 
 
-## Now combine aspects of above plots into 3 x 2 plot, I changed to make them both 1,1
+## Now combine aspects of above plots into 3 x 2 plot
 pcomb <- plot_grid(p2, p1, align = "h", rel_widths = c(1.0,0.80))
 
-?plot_grid
 ```
 
 ```{r}
@@ -356,65 +462,127 @@ pcomb
 
 ##Figure 2
 ```{r figure 2 functions}
-add.top <- function(df, new.level){
-  to.add <- data.frame(mean = c(NA,NA, 0), ci.lo = c(NA,NA, 0), ci.hi = c(NA,NA, 0),
-                       category = rep("", 3), attribute = rep(df$attribute[1],3),
-                       level = c("", " ", new.level))
-  return(rbind(to.add, df))
-}
-add.justify <- function(df){
-  df$left.justify <- rep(0, nrow(df))
-  df$left.justify[2] <- 1
-  return(df)
-}
 
-
+    
 ## Function to get regression-based AMCE estimates for each attribute level using 
 ## OLS estimator with clustered SEs (Hainmueller, Hopkins and Yammamoto 2014)
 
+# function called within amce.tab to get the actual amce's 
+
 get.amcetab <- function(data, variables, J = 2){    
+  
+  # important to have the list of variables length to know how many AMCE's to
+  # calculate
+  
   Nvar <- length(variables)
   amce.list <- vector("list", length = Nvar)
   
   for(i in 1:Nvar){ # get AMCE for each variable attribute
+    
+    # regression on every variables with mp.preferred individually. fmla builds
+    # each regression through each iteration of the loop
+    
     fmla <- as.formula(paste("mp.preferred ~ ",variables[i], sep = ""))
+    
+    # fmla is placed into ols. Runs a linear regression based on the formula.
+    # Gets same results for the regression as just calling lm but there are
+    # other things in the output as well
+    
     model <- ols(fmla, data = data, x = T, y = T) 
     # NOTE: The data for the model has to have no NAs on any model variables 
     # for the robcov(cluster()) function to work 
+    
+    #adjusts the variance-covariance matrix of a fitto correct for
+    #heteroscedasticity and for correlated responses from cluster samples.
+    #Clusters by ID, which is each individual person tested as they were tested
+    #10 times.
+    
     model.clus <- robcov(model, cluster = data$ID, method = "efron")
+    
+    # list of the coefficients from the model. taking out the baseline because
+    # they do comparisons to the baseline
+    
     coef <- model.clus$coef[names(model.clus$coef)!="Intercept"]
+    
+    # calculates as well as gets the standard error for each of the coefficients 
+    
     se.clus <- sqrt(diag(model.clus$var))
-    se.clus <- se.clus[names(se.clus)!="Intercept"]       
+    se.clus <- se.clus[names(se.clus)!="Intercept"]   
+    
+    # creating a table from the info drawn from the model 
+    
     sub.tab <- data.frame("AMCE" = coef, 
                           "ci.lo" = coef - (1.96*se.clus),
                           "ci.hi" = coef + (1.96*se.clus),
                           "cluster.se" = se.clus)
+    
+    # making the name of each of the coefficients from the model a column in the
+    # created dataframe
+    
     sub.tab$category <- names(coef)
+    
+    # splits into two columns. Since these are categorical variables, the
+    # rgression output is the name of the variable being regressed on, and equal
+    # sign, and then the category. This separates the variable and the category
+    # of the coefficient into two columns
+    
     sub.tab <- cbind(sub.tab, colsplit(sub.tab$category, "=", c("attribute","level")))
     sub.tab$level <- as.character(sub.tab$level)    
+    
+    # no longer needed since made the two columns out of the variable names
+    
     row.names(sub.tab) <- NULL
-    # add in gaps and baselines
+    
+    ## add in gaps and baselines
+    
+    # these had been taken out when we did not want coefficient for the
+    # intercept. Now it is added back into table for reference as 0's
+    
     to.add <- data.frame(AMCE = c(NA,NA, 0), ci.lo = c(NA,NA, 0), ci.hi = c(NA,NA, 0),
                          cluster.se = c(NA,NA, 0),
                          category = rep("", 3), attribute = rep(sub.tab$attribute[1],3),
                          level = c("", " ", "baseline"))
+    
+    # since this is a for loop will do the same for each regression
+    # individually. All are saved into amce.list
+    
     amce.list [[i]] <- rbind(to.add, sub.tab)
   } 
+  
+  # create one large table from the list of individual subtables for each regression 
+  
   amce.tab <- do.call("rbind", amce.list)
+  
   # re-make initial labels column
+  
   amce.tab$category <- paste(amce.tab$attribute, amce.tab$level, sep = ": ")
+  
   # make this into ordered factor
   amce.tab$category <- factor(amce.tab$category, levels = rev(amce.tab$category), order =T)    
   
   return(amce.tab)
 }
 
-## Function that calls get.amcetab for multiple predictors and combines results
+
+## author: Function that calls get.amcetab for multiple predictors and combines results
+
+# inputs for the function are a dataframe, variables from dataframe wanting to
+# be used to get their amce and whether there are multiple datasets, and if they
+# test subjects are in same political party.
+
+# amce.tab only function is to prepare data so as to call get_amcetab. That is
+# why there are many if statements for different number of datasets and parties.
 
 amce.tab <- function(data, variables, multi = F, same.party = F){
   # data must be a single data frame or a list of data frames (if multi = T)
   # with named elements
   # Also relies on specific ordering of explanatory variables
+
+  # first try when multi is true. What is going on here is iterating over the
+  # list of dataframes all calling get_amcetab for each of the dataframes in the
+  # list. Necessary that all dataframes have the variables inputed into the
+  # orignal function
+  
   if(multi == T & same.party == F){
     amce.tab.list <- list(NA, length = length(data))
     for(i in 1:length(data)){
@@ -422,41 +590,77 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
       tmp$set <- rep(names(data)[i], nrow(tmp))
       amce.tab.list[[i]] <- tmp
     }
+    
+    # combining all the dataframes together to create one large dataset with set
+    # column to be able to tell which amce belongs to which dataset from the list.
+    
     amce.tab <- do.call("rbind",amce.tab.list)
     amce.tab$set <- factor(amce.tab$set)
     return(amce.tab)
   }
+  
+
+  # same as before in needing to iterate over every dataset in the list of
+  # datasets and call get_amcetab for all of them
+  
   if(multi == T & same.party == T){
     amce.tab.list <- list(NA, length = length(data))
     for(i in 1:length(data)){
+      
+      # check for same party. If they are the same party. If true, the first
+      # variable is taken out of the variable list. This is why author stated
+      # that the order of variables is important.
+      
       vars <- if(grepl("same party", names(data)[i])==T|grepl("Same Party", names(data)[i])==T) variables[2:length(variables)] else variables
+      
+      # regardless now calls get.amcetab for every element of the list
+      
       tmp <- get.amcetab(data[[i]], variables = vars)
       tmp$set <- rep(names(data)[i], nrow(tmp))
       amce.tab.list[[i]] <- tmp
     }
     names(amce.tab.list) <- names(data)
+    
+    # separtes the data where they are same party and datasets where they
+    # are not in same party
     diff.party <- amce.tab.list[grepl("same party", names(amce.tab.list))==F&
                                   grepl("Same Party", names(amce.tab.list))==F]
     same.party <- amce.tab.list[grepl("same party", names(amce.tab.list))==T |
                                   grepl("Same Party", names(amce.tab.list))==T]
+    
+    # dataframe to fill in when they are same party 
+    
     to.add <- data.frame(AMCE = rep(NA, 4), ci.lo = rep(NA, 4), ci.hi =  rep(NA, 4),
                          cluster.se =  rep(NA, 4),
                          category =  diff.party[[1]]$category[1:4], 
                          attribute =  diff.party[[1]]$attribute[1:4], 
                          level = diff.party[[1]]$level[1:4],
                          set = rep(NA, 4))
-    for(i in 1:length(data)){                     
+    
+    for(i in 1:length(data)){ 
+      
+      #replacing results from amcetab when same party is true.  
+      
       if(grepl("same party", names(data)[i])==T|grepl("Same Party", names(data)[i])==T){
         amce.tab.list[[i]] <- rbind(to.add,amce.tab.list[[i]])
         amce.tab.list[[i]]$set[1:4] <-  amce.tab.list[[i]]$set[5:8]
       }
       else amce.tab.list[[i]] <- amce.tab.list[[i]]
-    }     
+    }    
+    
+    # finally combines all the datasets from the list of datasets together and
+    # outputs the results together.
+    
     amce.tab <- do.call("rbind",amce.tab.list)
     amce.tab$set <- factor(amce.tab$set)
     return(amce.tab)
   } 
+  
+  # last if statement and it is the easiest just when multi is false. All
+  # amce.tab needs does is just call get.amcetab
+  
   if(multi == F)   {
+    
     get.amcetab(data, variables)
   }
   
@@ -476,6 +680,9 @@ wide.dat <- readRDS("./friends_neighbors_replication/study2data_wide.rds")
 ### Create labels for plotting
 
 # for full results
+
+# more informative labels 
+
 labels.full <- rev(expression(
   "", italic("Party & position (baseline = Labour left-wing)"), "Labour centre", "Conservative centre", "Conservative right-wing",
   "", italic("Local roots (baseline = lives elsewhere)"),"5 years in area", "20 years in area", "Grew up and lives in area", 
@@ -489,36 +696,70 @@ labels.sub <- expression("Grew up and lives in area", "20 years in area", "5 yea
                          italic("Local roots (baseline = lives elsewhere)"))
 
 
-# for x axis
+# label for x axis
+
 effect.label <- "Change in probability of MP being preferred,\n relative to baseline"
-
-
-
 
 
 ### Figure 3: AMCEs for all attributes
 
+# calling amce.tab to get the amce values for all these variables when used as
+# explanatory variable for mp.preferred
+
 res <- amce.tab(data = long.dat, 
                 variables = c("mp.partypos", "mp.localroots", "mp.const", "mp.influence", "mp.policy", "mp.gender")
                 , multi = F)
+
+# reversing the order of the factors for the various categories of amce, unsure
+# why
+
 res$category <- factor(as.character(res$category), levels = rev(as.character(res$category)), order =T)
 #write.csv(res, "amce-all.csv")# write results to csv file
 
 # Full plot for all attributes
+
+# since each had two spaces in between, the top one is not needed.
+
 res <- res[2:nrow(res),] # chop off top empty layer
 res <- subset(res, level != "baseline")# remove artificial 'baseline' rows
+
+# labels created above
+
 labels <- labels.full
+
+# initiates the plot. The attribute column is each variable which is why every
+# category within a variable has same color.
+
 ggplot(res, aes(x = category, y = AMCE, color = attribute)) + 
+  
+  # baseline of 0 to show how significant each coefficient is 
+  
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
-  geom_pointrange(aes(ymin = ci.lo, ymax = ci.hi), size = 0.75) + 
+  
+  # gives the standard error range and a point at the amce
+  
+  geom_pointrange(aes(ymin = ci.lo, ymax = ci.hi), size = 0.75) +
+  
+  # inputs better label for y axis (Will become x axis)
   labs(y = effect.label, x = "") + 
+  
+  # With the categories on x axis, everything is jumbled, thus flipping the
+  # coordinates so the categories are legible
+  
   coord_flip() + 
+  
+  # adding nice formating 
+  
   theme_bw() + 
   theme(axis.text = element_text(colour = "black")) +
   theme(legend.position = "none") +
   theme(text = element_text(size = 15)) +
   theme(axis.ticks.y = element_blank(), axis.text.y = element_text(hjust = 1), # remove ticks and justify
         axis.title.x = element_text(size = 13, vjust = 0)) + 
+  
+  # change labels from those from the dataset that were abbreivated to something
+  # more infomrative
+  
   scale_x_discrete(labels=labels)
 
 ```
