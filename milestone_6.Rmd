@@ -40,8 +40,10 @@ library(car)
 library(foreign)
 library(rms)
 library(reshape2)
-library(plyr)
-library(arm)
+
+library(naniar)
+library(rstanarm)
+
 ```
 
 
@@ -57,6 +59,7 @@ Thus, voters use local roots as an important factor in candidate selection when 
 
 
 
+
 ## Beautiful Graphic 
 
 
@@ -65,7 +68,6 @@ Thus, voters use local roots as an important factor in candidate selection when 
 # necessary packages. I needed to detach plyr because even though the author
 # uses it, it interferes with my use of dplr
 
-detach(package:plyr)
 library(tidyverse)
 library(dplyr)
 
@@ -163,6 +165,41 @@ m4 <- lm(nickminusphil ~ localtreat*behtreat +
            gender + agegrp + socgrade + qual
          , data = d)
 se4 <- sqrt(diag(vcovHC(m4)))
+
+
+
+# #stan_m3 <- stan_glm(nickminusphil ~ localtreat*behtreat, data = d, refresh = 0)
+# 
+# # stan_m4 <- stan_glm(nickminusphil ~ localtreat*behtreat +
+# #            gender + agegrp + socgrade + qual
+# #          , data = d, refresh = 0)
+# 
+# #d_new<-d %>% mutate(tnickgt = case_when(nickgt == "TRUE" ~ 1, TRUE ~0))
+# 
+# stan_m5 <- stan_glm(nickminusphil ~ localtreat*behtreat + age + age*localtreat*behtreat
+#          , data = d, refresh = 0)
+# 
+# 
+# stan_m6 <- stan_glm(tnickgt ~ localtreat*behtreat +
+#            gender + agegrp + socgrade + qual
+#          , data = d_new, family = binomial, refresh = 0)
+# 
+# 
+# stan_m7 <- stan_glm(tnickgt ~ localtreat*behtreat +
+#            gender + agegrp 
+#          , data = d_new, family = binomial, refresh = 0)
+# 
+# 
+# 
+# stan_m7
+# l_1<-loo(stan_m3)
+# 
+# l_2<-loo(stan_m4)
+# 
+# l_3<-loo(stan_m5)
+# 
+# loo_compare(l_3, l_2)
+
 ```
 
 ## Table 1
