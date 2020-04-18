@@ -2,7 +2,8 @@
 title: 'Replication of "Why Friends and Neighbors? Explaining the Electoral Appeal of Local Roots"'
 author: "Diego Martinez"
 date: "4/3/2020"
-output: bookdown::pdf_document2
+output: 
+  bookdown::pdf_document2
 bibliography: [bibliography.bib]
 
 
@@ -13,10 +14,6 @@ bibliography: [bibliography.bib]
 
 Campbell et al (2019) show that candidate's with shared local roots appeals to voters and that having local roots is an important factor in a voter's candidate selection. I was successfully able to replicate all the results presented in the orignal article "Why Friends and Neighbors? Explaining the Electoral Appeal of Local Roots." by Rosie Campbell, Philip Cowley, Nick Vivyan, Markus Wagner. To further their analysis, I modeled how local roots influence different sub-populations including males vs. females voters as well as between different age groups. I found the average marginal effect of local roots to not remain constant across subgroups, meaning local roots affect groups of voters differently. Thus, any further research regarding local roots effects should consider the gender as well as age makeup of the sample.
 
-
-
-
-They seek to understand why politicians with local roots have more successs by testing how this effect holds up when voters are treated with the candidate's behavioral information. They concluded that with more infomation, the local roots effect does diminish; however, it is still positve. Furthermore, voters had a marginally higher preference for candidates with local roots compared to other varying characterstics including gender, party, and policy interests. I was able to replicate all the results of their paper in R and all my code can be found in on Github. For my extension, I modeled how local roots influence different sub-populations including male vs. female voters as well as different age groups.   
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -33,21 +30,17 @@ library(stargazer)
 library(knitr)
 library(tidyverse)
 library(devtools)
-library(ggplot2)
 library(sandwich)
 library(lmtest)
 library(stargazer)
 library(cowplot)
 library(cobalt)
 library(xtable)
-library(devtools)
 library(margins)
 library(car)
 library(foreign)
 library(rms)
 library(reshape2)
-
-library(naniar)
 library(rstanarm)
 library(tidybayes)
 library(matrixStats)
@@ -60,7 +53,7 @@ library(matrixStats)
 
 "Why Friends and Neighbors? Explaining the Electoral Appeal of Local Roots" ^[[Replication Paper](https://www.journals.uchicago.edu/doi/abs/10.1086/703131)] takes a deeper look into the "friends and neighbors effect" first researched by Vladimer Orlando Key in 1949. The "friends and neighbors effect" has been researched over the years; however, the research has been been focused on observing its existence with the reasoning for why it occurs being untested and unknown. The prevailing prior conceptual understanding has been that voters use the fact a candidate has local roots to make assumptions about how a said candidate may represent their constituents. Campbell et al are the first to test this hypothesis, measuring how varying the level of information voter's receive about those running affects the candidate with local roots chances of being elected. They performed a vignette experiment of fake elections instead of analyzing a real election to isolate the effects of local roots and control for the amount of information, not allowing prior information about any candidates influence the results. They modeled respondents' satisfaction with candidates described in the experiment using linear regression, paying attention to the interaction term between local roots and behavioral information. They found results in favor of their hypthoesis as the local roots effect diminished in the presence of more information; however, the result being positive, they took a deeper look with a second study. After performing a conjoint survey experiment, they measured the average marginal component effect, change in probability of a candidate being preferred compared to a baseline for each regressor variable, using an OLS model. The model showed candidates with local roots compared to no local roots to be substantially preferred with this difference being one of the largest out of all the attributes analyzed. Thus, the reasoning for why this "friends and neighbors" effect occurs is not solely voters using local roots to make inferences, suggesting local roots to be important in candidate selection.
 
-I utilized R, a language and environment for statistical computing, for the replication of the author's code [@r]. The data and code for the paper were made available on  Dataverse [@campbell_cowley_vivyan_wagner_2018]. I followed the format laid out by Gary King in "Publication, Publication" to guide my replication project [@king]. I use many techniques from the Gov 1006 textbook "Regression and Other Stories" [@RAOS] as well. I was able to succesfully replicate all the results of the paper. I came across a few errors based on the updating of packages; however, these were easily fixed. I had the most difficulty with trying to replicate the paper's stargazer table. The code by itself did not have the note at the bottom nor the column headers. I was able to replicate the results displayed in the table; however, the style and formatting were not exactly the same. All of the others code as well as my own can be found in my Github repository ^[[Github Reposotory](https://github.com/diegomartinez1221/gov_1006_replication)]. 
+I utilized R, a language and environment for statistical computing, for the replication of the author's code [@r]. The data and code for the paper were made available on  Dataverse [@campbell_cowley_vivyan_wagner_2018]. I followed the format laid out by Gary King in "Publication, Publication" to guide my replication project [@king]. I use many techniques from the Gov 1006 textbook "Regression and Other Stories" [@RAOS] as well. I was able to succesfully replicate all the results of the paper. All of the their code as well as my own can be found in my Github repository ^[[Github Reposotory](https://github.com/diegomartinez1221/gov_1006_replication)]. 
 
 I found the results of the original paper very intriguing; however, my immediate question was how would the results hold across subsets of the sample population. Different age groups as well as genders display different preferences in political issues and voting trends, thus, should it be expected that they react to local roots in the same way? I began by simplying the regression model utilized by the authors in study 1 by excluding the education and social grade variables ^[After performing leave one out cross validation, loo, I found a model without these variables to be just as predictive, meaning these were only adding noise]. I also performed my analysis within a Bayesian framework, using stan_glm instead of just lm for my modeling. In order to look at how local roots affects subsets differently, I interacted the local roots treatment variable with the gender and age group variables. The average local roots treatment effect were slightly different across genders; however, the effect varied signicantly between age groups with the effect being stronger for older voters.
 
@@ -88,8 +81,9 @@ Study 1 used a vignette experiment to more generally test whether the presence o
 In study 2, every respondent was treated with behavioral localism, local roots, and other varying characteristics such as gender, political interests, and party. Thus, in contrast to study 1, this will test if the local roots effect is nullfied in the candidate selection process when a wealth of other knowledege is presented to the voters, leaving them without the need to use local roots as a cue for the unkown. Each respondent was given five hypothetical elections with randomly varying attributes, all of which were more specific than in study one. The respondents were asked to pick wihch candidate they preferred based on information about the localness of the candidates, behavioral localism measured by on how much time is spent on local issues and where the candidates allegiance lies (national party, constituents, or personal views), and other defining characterstics like age, gender, and policy interests. Each respondent was given five varying elections to chose from. Since study 2 posseses much more and much more varied information on the candidates in question, they analyze the average marginal component effect (AMCE). This measures the probability of why a candidate is being chosen based on the candidate's particular attribute for each category compared to a baseline. This will present the change in probability of a candidate being preferred broken down by each possible indivual component of their profile. Even here with so much more information, they found the AMCE for being local was positive and one of the most prominent compared to other categories as well as the baseline of not being local. Thus, the authors empirically found local roots to be an important aspect for voter's in candidate selection and it is not merely cue. 
 
 
+# Replication 
 
-# Beautiful Graphic 
+I was able to replicate all the results of the paper. I came across a few errors based on the updating of packages; however, these were easily fixed. I had the most difficulty with trying to replicate the aesthetics of the figures and tables, particularly the stargazer table. I was able to replicate the results displayed in the table; however, the style and formatting were not exactly the same. My main issues were with the formatting of captions and notes after a table or figure. I turned to the bookdown package to handle adding the neccessary captions. 
 
 
 ```{r, m5 graphic, include=FALSE, eval=FALSE}
@@ -147,16 +141,24 @@ d%>%
 
 # Paper Extensions 
 
-The authors were very thorough in their analysis including a lengthy appendix with a lot of other things that were tested that were not highlighted prominently in the main article. However, I do believe there are a of interesting paths to follow in regard to extensions. The authors in their discussion and conclusion provide a lengthy list of questions and extension that arise from their own analysis. However, most of this does involve trying to explain the local roots effect that was out of the scope of their analysis :"What might account for the local roots effects that we have observed but that are left un-explained by the particular mechanisms considered in this article?" [@campbell_cowley_vivyan_wagner_2019]. They go on to speak about theories as well as experiments that should be carried out, including questions and frameworks for experiments with real elections to view how their results play out in an actual race. However, they do not mention much at all about the shortcomings of their analysis (not that there is necessarily any, the analysis was very thorough) and all of these proposed extensions are outside the scope of Gov 1006. My extensions will be focused on the data and experiments they used and will consist of subsetting the data to view how their results apply to various subgroups of the population. 
 
-For study 1, the authors in one of the appendices performed balance and randomization checks to insure that there is a "distributional balance of four respondent characteristics – gender, age, education and social grade, all measured pretreatment – across the six treatment groups created in the experiment" [@campbell_cowley_vivyan_wagner_2019]. Since "None of the differences in proportions across treatment groups are bigger than 10% and only a small number are greater than 5%" [@campbell_cowley_vivyan_wagner_2019], I believe this presents an excellent opportunity to dive deeper into if the "friends and neighbors" effect is stronger for one subset of the population than others (ex. males vs. females, older vs. younger). I hypothesis that there may in fact be some interesting differences especially in regard to age. For example, do the younger people in the study, who may not be as engaged in politics or care how they are represented in Parliament, more often vote for the candidate with local roots. Or even on the opposite side of the spectrum, do the elder people in the study who have been engrained in their community and care about their representation vote for the person who will be concerned more with the wants and needs of the people than his/her personal political views. I could do a lot more analysis such as this with gender as well and the other personal information included about the people surveyed. 
+My immediate question after reading the article was how would the results hold across subsets of the sample population. For study 1, the authors in one of the appendices performed balance and randomization checks to insure that there is a "distributional balance of four respondent characteristics – gender, age, education and social grade, all measured pretreatment – across the six treatment groups created in the experiment" [@campbell_cowley_vivyan_wagner_2019]. Since "None of the differences in proportions across treatment groups are bigger than 10% and only a small number are greater than 5%" [@campbell_cowley_vivyan_wagner_2019], This presents an excellent opportunity to dive deeper into if the "friends and neighbors" effect is stronger for one subset of the population than others. I hypothesis that there may in fact be differences especially in regard to age and gender. For example, do the younger people in the study, who may not be as engaged in politics or care how they are represented in Parliament, more often vote for the candidate with local roots. Or even on the opposite side of the spectrum, do the elder people in the study who have been engrained in their community and care about their representation vote for the person who will be concerned more with the wants and needs of the people than his/her personal political views. Different age groups as well as genders display different preferences in political issues and voting trends, thus, should it be expected that they react to local roots in the same way?
+
+The authors built four different linear regression models to analyze the data from study 1; however, focused on one for the entire project, using the model to analyze the average treatment effect as well as make predictions ^[Repliction Appendix a. - They solely used model 4. Differed from the first two as different levels of behavioral information were interacted with the local roots effect whereas the others only interacted with the presence of additional information. Differered from model 3 as model 3 simply looked at the interaction while model 4 included respondent characteristic variables]. I compared the model they used which included all four of the respondent characterstics variables with the simple model that only included the interaction between local roots and behavioral information using leave one out cross validation. To perform such an analysis, I needed to utilize stan_glm instead of lm as the authors did. I found the model without the extra variables to be only slighlty inferior, meaning these variables were potentially only adding noise. ^[Extension Appendix a for full results of the loo comparison]. Still wanting to subset the results, I simplified the regression model by excluding the education and social grade variables (Extension Appendix b). I only used this model to test that I would get similar results using stan_glm instead of lm. In figure 3 (extension appendix c), the predictions ^[Predictions for Nick minus Phill's scores analyzed at the modal value of each category (females, aged 25-49)] using stan_glm and posterior_linepred mirrored the predictions displayed in figure 1 of the original paper (replication appenix b). However, this was not the model I used to analyze if their are heterogenous effects as the local treatment effect is a constant across subgroups.
+
+In order to look at how local roots affects subsets differently, I interacted the local roots treatment variable with the gender and age group variables. The average local roots treatment effect ^[Since I am using stan_glm and posterior_linpred, the regression models as well as predictions are based off of thousands of simulations. Thus, I chose to use the median and mad instead of mean and standard deviation as they ar emore stable with simulated results.] were slightly different across genders; however, the effect varied signicantly between age groups with the effect being stronger for older voters (extension appendix d). For all subgroups, the the effects of local roots on voter evaluations of politicians are reduced when voters receive direct information. However, my findings differ in tha fact that local roots do not always have a significant positive impact. For the youngest category, 18-24, even with no behavioral information provided, the local roots effect is negligible for females. However, on the opposite end of the spectrum, the local roots effects are even stronger than those reported in the article for the older members of the sample population. Thus, it should not be assumed that the local roots effect is homogenous with such a wide range of average treatment effects across gender and age subgroups.  
+
+To continue my analysis, I also wanted to frame my findings using the context of  study 2. With study 2 being a conjoint survey experiment, the best method in which to model such data is using an OLS model. Thus, I compare the local roots effects across genders and age groups by filtering the data prior to running the others own OLS model. Figure 4 (extension appendix e) shows the results when subsetting by gender adn figure 5 shows the results when subsetting by age. In line with my previous findings, the changes between groups were substantial.The change in probability of a candidate being preferred due to local roots for men to be about 1/3 less than that for women. In between age groups, I also saw that older voters showed a much stronger affinite for local roots, while younger voters change in probability was more affected by changes in the levels of behavioral information. From the original study, MPs with at least a any level of local roots were 10% and 13% more likely to be chosen by respondents. From my tests, males showed a lower response of only about a 10% increase for the 20 year as well as grew up in the area levels of local roots whereas the effect on females exceeded 15 %. The results between the age groups were much more varied and there was not a distinct trend in the older a voter is the more likely they will chose a candidate based on local roots. All the results agreed with those of the first article in that the magnitude of the local roots effect is constistanlty amongst the largest across all the attributes. 
+
+Thus, I got mixed results in comparison to those documented in the original article as well as between my two different extensions. The conclusion that the presence of behavioral information negatively impacts the magnitude of the local roots effect is consistent across all my findings. However, the conclusion that local roots have a positive and significant effect do not hold constant across subsets of the population. The treatment effect of local roots varied substantially across age subgroups from the study 1 data, ranging from being not significant for the younger groups to being even large than the average treatment effect presented in the article. However, interestingly, the results of for my extension of study 2 showed opposite findings. Here, the difference in the average marginal component effect for females was greater than for males, while the differences across age subsets were smaller. Thus, there are definitely differences in the local roots effect and it cannot be assumed to be held constant across the entire electorate. More research should be performed to directly on why local roots effect males vs. females as well as older vs. younger voters. 
 
 
 
 
-# Appendix
 
-## Replication Appendix 
+
+# Replication Appendix 
+
 
 
 ```{r, table 1 setup}
@@ -233,11 +235,8 @@ se4 <- sqrt(diag(vcovHC(m4)))
 #d_new<- d %>% mutate(tnickgt = case_when(nickgt == "TRUE" ~ 1, TRUE ~0))
 ```
 
-I was able to replicate all tables and graphics: 
 
-
-
-```{r table 1, results="asis", message=FALSE, comment=FALSE}
+```{r table 1, results="asis",  message=FALSE, comment=FALSE}
 ## Output to table
 
 # I needed to change/add many things to the original to get a more similar table
@@ -295,7 +294,7 @@ stargazer(header = FALSE,
           # commends, but it is not an exact match
           
        notes.append = FALSE, notes.align = "l",
-      notes.label  = "\\multicolumn{5}{l}{\\parbox[t]{\\textwidth}{Note. All models estimated via ordinary least squares. Dependent variable is respondent relative rating of MP Nick (the 0–10 rating of Nick minus that of Philip). Robust standard errors in parentheses. N p 5,203.}}\\\\",
+      notes.label  = "\\multicolumn{5}{l}{\\parbox[t]{\\textwidth}{All models estimated via ordinary least squares. Dependent variable is respondent relative rating of MP Nick (the 0–10 rating of Nick minus that of Philip). Robust standard errors in parentheses. N = 5,203. * p <= .1.,** p <= .05., *** p < .01.}}\\\\",
       single.row = TRUE,
       column.sep.width = "1pt")
 
@@ -603,7 +602,8 @@ ggplot(d_new, aes(x = localtreat, y = tnickgt, group = behtreat)) +
 \hfill\break
 
 
-```{r figure 1, cache=TRUE}
+
+```{r figure 1 setup, cache=TRUE}
 ### Figure 1
 
 ### Create useful functions
@@ -829,7 +829,9 @@ pcomb <- plot_grid(p2, p1, align = "h", rel_widths = c(1.0,0.80))
 
 ```
 
-```{r}
+
+```{r fig.cap = 'Effects of local roots conditional on behavioral information treatments (study 1). A, Predicted relative rating of MP Nick (MP Nick rating minus MP Philip rating) as the MP local roots treatment varies, with all control variables held constant at their modal value in the sample. Top, predicted values when respondents receive no information about MP behavioral localism. Middle, predicted values when respondents receive information about MP behavioral localism and Nick is revealed to be low in behavioral localism. Bottom, predicted values when respondents receive information about MP behavioral localism and Nick is revealed to be high in behavioral localism. For each of the same behavioral localism conditions, B show the estimated treatment effect of MP Nick having local roots. Estimates are calculated from model 4 in table 2. Open circles indicate point estimates. Lines denote 95% confidence intervals.'}
+
 pcomb
 ```
 
@@ -1049,7 +1051,9 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
 ```
 
 
-```{r figure 2 graph, message=FALSE, warning=FALSE}
+
+
+```{r message=FALSE, warning=FALSE, fig.cap= 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute, estimated via ordinary least squares regression, with standard errors clustered by respondent. Bars show 95% confidence intervals.'}
 ### Load in Study 2 data 
 
 long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
@@ -1143,10 +1147,12 @@ ggplot(res, aes(x = category, y = AMCE, color = attribute)) +
 ```
 
 
-## Extension Appendix
+
 
 ```{r Stan Extensions, cache= TRUE}
 
+
+# same models as those created by the authors just ins stan instead of lm
 
 stan_m3 <- stan_glm(nickminusphil ~ localtreat*behtreat, data = d, refresh = 0)
 
@@ -1154,46 +1160,57 @@ stan_m4 <- stan_glm(nickminusphil ~ localtreat*behtreat +
           gender + agegrp + socgrade + qual
          , data = d, refresh = 0)
 
-stan_m5 <- stan_glm(nickminusphil ~ localtreat*behtreat + agegrp + gender
-         , data = d, refresh = 0)
+#print(stan_m3, digits = 2, detail = FALSE)
+#print(stan_m4, digits = 2, detail = FALSE)
 
 
- stan_m6<- stan_glm(nickminusphil ~ localtreat*(behtreat+ gender+ agegrp)
-         , data = d, refresh = 0)
-
-
-
-# stan_m7 <- stan_glm(tnickgt ~ localtreat*behtreat +
-#            gender + agegrp 
-#          , data = d_new, family = binomial, refresh = 0)
-
-
+# using leave one out cross validation to compare the models 
 
 l_1<-loo(stan_m3)
 
 l_2<-loo(stan_m4)
 
+
+# models I create to test the effects of age and gender 
+stan_m5 <- stan_glm(nickminusphil ~ localtreat*behtreat + agegrp + gender
+         , data = d, refresh = 0)
+
+
+
 l_3<-loo(stan_m5)
 
 #(l_4<-loo(stan_m6))
 
+# craeting a dataframe with every possible combination of local treatment,
+# behavioral treatment, age, and gender to make predictions
 
 newdf_2 <- data.frame(expand_grid(localtreat = unique(d$localtreat), behtreat = unique(d$behtreat), agegrp = unique(d$agegrp), gender = unique(d$gender)))
 
+# making my predictions, posterior_linpred runs 400 simulations for each row of
+# newdf_2
+
 probs<-posterior_linpred(stan_m5, newdata = newdf_2, transform = TRUE)
+
+# collect the column median and madinstead of mean and se for each column of
+# predictions because the means are more stable
 
 predictions<-data.frame(predictions = colMedians(probs), mad = colMads(probs))
 
 
 
+# adding the predictions to the newdf_2 to know the variables that go with the
+# row predictions
 
 preds<-newdf_2%>%
   cbind(predictions)%>%
+  
+  # calculating the 95% confidence intervals 
+  
   mutate(lower = predictions - 1.96*mad, upper = predictions + 1.96*mad)
 
 ```
 
-```{r}
+```{r, fig.cap= "Presented is the predictions for the nick minus phil ratings for the modal value of each category in the datset, comparing the results between local and no local roots.. This is a method that the authors use and the modal values are a women age 25-49. The purpose of the graphic is to ensure I get similar results when I use stan_glm instead of lm as well as if I get similar predictions taking out the education and socail grade variables. The predictions are concurrent with those found in the orignal paper and we are able to see the diminishing effect of local roots when behavioral information is present."}
 
 
 
@@ -1233,14 +1250,15 @@ preds %>%
   # manipulating aesthetics and adding a title for the final output.
   
   theme_bw() +
-  theme(legend.position = "bottom") +
-  theme(axis.ticks.y = element_blank(), axis.text.y = element_blank())
+  theme(legend.position = "bottom") + 
+  labs(title = "Predictive Difference in Rating for Modal Level of Each Variable")
 
 ```
 
 
+```{r, fig.cap= " Shows the estimated treatment effect of MP Nick having local roots faceted by age and gender.Estimates are calculated from stan_m7. Open circles indicate point estimates. Lines denote 95% confidence intervals. There are considerable differences in the treatment effects between the various subgroups. The reported average treatment effect is 0.7 for no information and as we with this figure that this varies in both directions."}
 
-```{r}
+# new model with interactions to subset the into gender and age groups 
 
 stan_m7 <- stan_glm(nickminusphil ~ localtreat*(behtreat + gender*agegrp),
           data = d, refresh = 0)
@@ -1249,7 +1267,9 @@ stan_m7 <- stan_glm(nickminusphil ~ localtreat*(behtreat + gender*agegrp),
 
 #print(stan_m7, digits = 3, detail = FALSE) 
 
-newdf_2 <- data.frame(expand_grid(localtreat = unique(d$localtreat), behtreat = unique(d$behtreat), agegrp = unique(d$agegrp), gender = unique(d$gender)))
+# splitting into two datasets. I arrange so that the two will eventaully line up
+# when I bring them back together. I split so I can make predictions on all
+# those with local roots and then all those without local roots
 
 non_local<-newdf_2%>%
   arrange(behtreat, agegrp, gender)%>%
@@ -1260,19 +1280,34 @@ local<-newdf_2%>%
   filter(localtreat == "Local roots")
 
 
+# making predictions for each of the subsets 
 
 local_preds<-posterior_linpred(stan_m7, newdata = local, transform = TRUE)
 
 non_local_preds<-posterior_linpred(stan_m7, newdata = non_local, transform = TRUE)
 
+#  subtracting the two I get the average treatment effect
+
 ame<- local_preds - non_local_preds
 
+# since their are 4000 simulations for each row of possible combinations, I use
+# these to reduce down to one predictions for each
 
 avg_ame<-data.frame(predictions = colMedians(ame), mad = colMads(ame))
 
 local%>%
+  
+  # no longer need this column as the table is now a treatment effect between
+  # the two categories within local treatment
+  
   select(-localtreat)%>%
+  
+  # adding the median effects 
+  
   cbind(avg_ame)%>%
+  
+  # calculating the error 
+  
   mutate(lower = predictions - 1.96*mad, upper = predictions + 1.96*mad)%>% 
   ggplot(aes(x = behtreat, y = predictions)) + 
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
@@ -1280,9 +1315,13 @@ local%>%
   geom_point(size = 3.5, shape = 21, fill = "white") +
   labs(x = "", y = "") + 
   coord_flip() +
+  
+  # faceting to show the differences between the sub populations 
+  
   facet_wrap(gender ~ agegrp, ncol = 4, nrow = 2) + 
   theme_bw() +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") + 
+  ggtitle("Average Treatment Effect of Local Roots Across \nGender and Age Subsets")
 
 
 
@@ -1290,7 +1329,7 @@ local%>%
 
 
 
-```{r Extension 2, warning= FALSE}
+```{r Extension 2, warning= FALSE, fig.cap = 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute. In contrast to the original article, I subset the data by gender. Males pay slightly less attention to local roots than females.'}
 ### Load in Study 2 data 
 
 long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
@@ -1370,8 +1409,13 @@ effect.label <- "Change in probability of MP being preferred,\n relative to base
   # change labels from those from the dataset that were abbreivated to something
   # more infomrative
   
-  scale_x_discrete(labels=labels) +ggtitle("Difference In Local Roots AMCE Between Genders") + facet_wrap(~gender, nrow = 1)+ labs(caption = "Estimated average marginal component effects of each MP attribute level compared to the baseline\n level of the attribute. In contrast to the original article, I subset the data by gender. \nMales pay slightly less attention to local roots than females.")
+  scale_x_discrete(labels=labels) +ggtitle("Difference In Local Roots AMCE Between Genders") + facet_wrap(~gender, nrow = 1)
   
+```
+
+```{r, warning = FALSE, fig.cap= 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute. In contrast to the original article, I subset the data by age. The results between the age groups were much more varied and there was not a distinct trend in the older a voter is the more likely they will chose a candidate based on local roots. All the results agreed with those of the first article in that the magnitude of the local roots effect is constistanlty amongst the largest across all the attributes'}
+
+
 
 
  age_amces<-long.dat%>%
