@@ -1,4 +1,4 @@
-# gov_1006_replication
+# Replication of "Why Friends and Neighbors? Explaining the Electoral Appeal of Local Roots
 
 
 
