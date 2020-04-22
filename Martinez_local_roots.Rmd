@@ -484,7 +484,7 @@ pcomb
 
 \newpage
 
-# C. 
+## C. 
 ```{r figure 2 functions}
 
     
@@ -987,7 +987,7 @@ ame_full <-local%>%
 
 \newpage
 
-# D. 
+## D. 
 
 ```{r, warning= FALSE, fig.cap = 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute. In contrast to the original article, I subset the data by gender. Males pay slightly less attention to local roots than females. From the original study, MPs with any level of local roots were 10% and 13% more likely to be chosen by respondents. From my tests, males showed a lower response of only about a 10% increase for the 20 year as well as grew up in the area levels of local roots whereas the effect on females exceeded 15 %. The change in probability of a candidate being preferred due to local roots for men was about 1/3 less than that for women.'}
 ### Load in Study 2 data 
