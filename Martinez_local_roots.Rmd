@@ -822,6 +822,16 @@ preds<-newdf_2%>%
 
 ```
 
+
+```{r, results='asis'}
+library(huxtable)
+hu<-huxreg(stan_m4)
+
+
+hu
+```
+
+
 \newpage
 
 ## B. 
