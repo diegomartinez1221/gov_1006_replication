@@ -483,7 +483,7 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
 
 ```
 
-```{r, warning= FALSE, fig.cap = 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute. In contrast to the original article, I subset the data by gender. Males pay slightly less attention to local roots than females. From the original study, MPs with any level of local roots were 10% and 13% more likely to be chosen by respondents. From my tests, males showed a lower response of only about a 10% increase for the 20 year as well as grew up in the area levels of local roots whereas the effect on females exceeded 15 %. The change in probability of a candidate being preferred due to local roots for men was about 1/3 less than that for women.'}
+```{r, warning= FALSE, fig.cap = "Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute. In contrast to the original article, I subset the data by gender. Males pay slightly less attention to local roots than females. From the original study, MPs with any level of local roots were 10% and 13% more likely to be chosen by respondents. From my tests, males showed a lower response of only about a 10% increase for the 20 year as well as grew up in the area levels of local roots whereas the effect on females exceeded 15 %. The change in probability of a candidate being preferred due to local roots for men was about 1/3 less than that for women."}
 ### Load in Study 2 data 
 
 long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
@@ -567,7 +567,6 @@ effect.label <- "Change in probability of MP being preferred,\n relative to base
   
   
 ```
-\newpage
 
 Thus, I got mixed results in comparison to those documented in the original article as well as between my two different extensions. The conclusion that the presence of behavioral information negatively impacts the magnitude of the local roots effect is consistent across all my findings. However, the conclusion that local roots have a positive and significant effect do not hold constant across subsets of the population. The treatment effect of local roots varied substantially across age subgroups from the study 1 data, ranging from being not significant for the younger groups to being even large than the average treatment effect presented in the article. However, interestingly, the results of for my extension of study 2 showed opposite findings. Here, the difference in the average marginal component effect for females was greater than for males, while the differences across age subsets were smaller.
 
@@ -581,7 +580,7 @@ As an extension, I investigated if the local roots effects are  heterogeneous ac
 Thus, there are differences in the local roots effect and it cannot be assumed to be held constant across the entire electorate. Different voting groups have different trends and also different desires for what they want in a representative. Also, some people are more connected with their community than others whether a voter is new to the area or has lived their most of their life. Thus, not only how someone represents them in office, but who that is in terms of identifying with a candidate because they come from the same neighborhood, grew up in the same way, or share a common ethnicity is very important. Also as Campbell et al suggest, research should be performed on real elections to see how these effects play out with even more factors involved such as name recongition and media coverage. More research needs to be performed to directly test why local roots affect subpopulations differently males vs. females as well as older vs. younger voters.
 
 
-# Replication Appendix 
+# Appendix 
 
 I was able to successfully replicate all figures and tables. 
 
@@ -694,7 +693,7 @@ stargazer(header = FALSE,
 original Figure : 
 
 ![original figure](./original figure 1.png)
-
+\newpage
 
 Replication: 
 
@@ -1145,7 +1144,7 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
 
 
 
-```{r message=FALSE, warning=FALSE, fig.cap= 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute, estimated via ordinary least squares regression, with standard errors clustered by respondent. Bars show 95% confidence intervals.', include = FALSE}
+```{r message=FALSE, warning=FALSE, fig.cap= 'Estimated average marginal component effects of each MP attribute level compared to the baseline level of the attribute, estimated via ordinary least squares regression, with standard errors clustered by respondent. Bars show 95% confidence intervals.'}
 ### Load in Study 2 data 
 
 long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
@@ -1239,7 +1238,6 @@ ggplot(res, aes(x = category, y = AMCE, color = attribute)) +
 ```
 
 
-# Extension Appendix
 
 
 ```{r Stan Extension, cache= TRUE, eval = FALSE, include = FALSE}
