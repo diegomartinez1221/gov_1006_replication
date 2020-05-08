@@ -37,49 +37,122 @@ add.justify <- function(df){
 ## Function to get regression-based AMCE estimates for each attribute level using 
 ## OLS estimator with clustered SEs (Hainmueller, Hopkins and Yammamoto 2014)
 
+# function called within amce.tab to get the actual amce's 
+
 get.amcetab <- function(data, variables, J = 2){    
+  
+  # important to have the list of variables length to know how many AMCE's to
+  # calculate
+  
   Nvar <- length(variables)
   amce.list <- vector("list", length = Nvar)
   
   for(i in 1:Nvar){ # get AMCE for each variable attribute
+    
+    # regression on every variables with mp.preferred individually. fmla builds
+    # each regression through each iteration of the loop
+    
     fmla <- as.formula(paste("mp.preferred ~ ",variables[i], sep = ""))
+    
+    # fmla is placed into ols. Runs a linear regression based on the formula.
+    # Gets same results for the regression as just calling lm but there are
+    # other things in the output as well
+    
     model <- ols(fmla, data = data, x = T, y = T) 
     # NOTE: The data for the model has to have no NAs on any model variables 
     # for the robcov(cluster()) function to work 
+    
+    #adjusts the variance-covariance matrix of a fit to correct for
+    #heteroscedasticity and for correlated responses from cluster samples.
+    #Clusters by ID, which is each individual person tested as they were tested
+    #10 times.
+    
     model.clus <- robcov(model, cluster = data$ID, method = "efron")
+    
+    # list of the coefficients from the model. taking out the baseline because
+    # they do comparisons to the baseline
+    
     coef <- model.clus$coef[names(model.clus$coef)!="Intercept"]
+    
+    # calculates as well as gets the standard error for each of the coefficients 
+    
     se.clus <- sqrt(diag(model.clus$var))
-    se.clus <- se.clus[names(se.clus)!="Intercept"]       
+    se.clus <- se.clus[names(se.clus)!="Intercept"]   
+    
+    # creating a table from the info drawn from the model 
+    
     sub.tab <- data.frame("AMCE" = coef, 
                           "ci.lo" = coef - (1.96*se.clus),
                           "ci.hi" = coef + (1.96*se.clus),
                           "cluster.se" = se.clus)
+    
+    # making the name of each of the coefficients from the model a column in the
+    # created dataframe
+    
     sub.tab$category <- names(coef)
+    
+    # splits into two columns. Since these are categorical variables, the
+    # rgression output is the name of the variable being regressed on, and equal
+    # sign, and then the category. This separates the variable and the category
+    # of the coefficient into two columns
+    
     sub.tab <- cbind(sub.tab, colsplit(sub.tab$category, "=", c("attribute","level")))
     sub.tab$level <- as.character(sub.tab$level)    
+    
+    # no longer needed since made the two columns out of the variable names
+    
     row.names(sub.tab) <- NULL
-    # add in gaps and baselines
+    
+    ## add in gaps and baselines
+    
+    # these had been taken out when we did not want coefficient for the
+    # intercept. Now it is added back into table for reference as 0's
+    
     to.add <- data.frame(AMCE = c(NA,NA, 0), ci.lo = c(NA,NA, 0), ci.hi = c(NA,NA, 0),
                          cluster.se = c(NA,NA, 0),
                          category = rep("", 3), attribute = rep(sub.tab$attribute[1],3),
                          level = c("", " ", "baseline"))
+    
+    # since this is a for loop will do the same for each regression
+    # individually. All are saved into amce.list
+    
     amce.list [[i]] <- rbind(to.add, sub.tab)
   } 
+  
+  # create one large table from the list of individual subtables for each regression 
+  
   amce.tab <- do.call("rbind", amce.list)
+  
   # re-make initial labels column
+  
   amce.tab$category <- paste(amce.tab$attribute, amce.tab$level, sep = ": ")
+  
   # make this into ordered factor
   amce.tab$category <- factor(amce.tab$category, levels = rev(amce.tab$category), order =T)    
   
   return(amce.tab)
 }
 
-## Function that calls get.amcetab for multiple predictors and combines results
+
+## author: Function that calls get.amcetab for multiple predictors and combines results
+
+# inputs for the function are a dataframe, variables from dataframe wanting to
+# be used to get their amce and whether there are multiple datasets, and if they
+# test subjects are in same political party.
+
+# amce.tab only function is to prepare data so as to call get_amcetab. That is
+# why there are many if statements for different number of datasets and parties.
 
 amce.tab <- function(data, variables, multi = F, same.party = F){
   # data must be a single data frame or a list of data frames (if multi = T)
   # with named elements
   # Also relies on specific ordering of explanatory variables
+  
+  # first try when multi is true. What is going on here is iterating over the
+  # list of dataframes all calling get_amcetab for each of the dataframes in the
+  # list. Necessary that all dataframes have the variables inputed into the
+  # orignal function
+  
   if(multi == T & same.party == F){
     amce.tab.list <- list(NA, length = length(data))
     for(i in 1:length(data)){
@@ -87,41 +160,77 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
       tmp$set <- rep(names(data)[i], nrow(tmp))
       amce.tab.list[[i]] <- tmp
     }
+    
+    # combining all the dataframes together to create one large dataset with set
+    # column to be able to tell which amce belongs to which dataset from the list.
+    
     amce.tab <- do.call("rbind",amce.tab.list)
     amce.tab$set <- factor(amce.tab$set)
     return(amce.tab)
   }
+  
+  
+  # same as before in needing to iterate over every dataset in the list of
+  # datasets and call get_amcetab for all of them
+  
   if(multi == T & same.party == T){
     amce.tab.list <- list(NA, length = length(data))
     for(i in 1:length(data)){
+      
+      # check for same party. If they are the same party. If true, the first
+      # variable is taken out of the variable list. This is why author stated
+      # that the order of variables is important.
+      
       vars <- if(grepl("same party", names(data)[i])==T|grepl("Same Party", names(data)[i])==T) variables[2:length(variables)] else variables
+      
+      # regardless now calls get.amcetab for every element of the list
+      
       tmp <- get.amcetab(data[[i]], variables = vars)
       tmp$set <- rep(names(data)[i], nrow(tmp))
       amce.tab.list[[i]] <- tmp
     }
     names(amce.tab.list) <- names(data)
+    
+    # separtes the data where they are same party and datasets where they
+    # are not in same party
     diff.party <- amce.tab.list[grepl("same party", names(amce.tab.list))==F&
                                   grepl("Same Party", names(amce.tab.list))==F]
     same.party <- amce.tab.list[grepl("same party", names(amce.tab.list))==T |
                                   grepl("Same Party", names(amce.tab.list))==T]
+    
+    # dataframe to fill in when they are same party 
+    
     to.add <- data.frame(AMCE = rep(NA, 4), ci.lo = rep(NA, 4), ci.hi =  rep(NA, 4),
                          cluster.se =  rep(NA, 4),
                          category =  diff.party[[1]]$category[1:4], 
                          attribute =  diff.party[[1]]$attribute[1:4], 
                          level = diff.party[[1]]$level[1:4],
                          set = rep(NA, 4))
-    for(i in 1:length(data)){                     
+    
+    for(i in 1:length(data)){ 
+      
+      #replacing results from amcetab when same party is true.  
+      
       if(grepl("same party", names(data)[i])==T|grepl("Same Party", names(data)[i])==T){
         amce.tab.list[[i]] <- rbind(to.add,amce.tab.list[[i]])
         amce.tab.list[[i]]$set[1:4] <-  amce.tab.list[[i]]$set[5:8]
       }
       else amce.tab.list[[i]] <- amce.tab.list[[i]]
-    }     
+    }    
+    
+    # finally combines all the datasets from the list of datasets together and
+    # outputs the results together.
+    
     amce.tab <- do.call("rbind",amce.tab.list)
     amce.tab$set <- factor(amce.tab$set)
     return(amce.tab)
   } 
+  
+  # last if statement and it is the easiest just when multi is false. All
+  # amce.tab needs does is just call get.amcetab
+  
   if(multi == F)   {
+    
     get.amcetab(data, variables)
   }
   
@@ -129,16 +238,18 @@ amce.tab <- function(data, variables, multi = F, same.party = F){
 
 
 
-
 ### Load in Study 2 data 
 
-long.dat <- readRDS("study2data_long.rds")
-wide.dat <- readRDS("study2data_wide.rds")
+long.dat <- readRDS("./friends_neighbors_replication/study2data_long.rds")
+wide.dat <- readRDS("./friends_neighbors_replication/study2data_wide.rds")
 
 
 ### Create labels for plotting
 
 # for full results
+
+# more informative labels 
+
 labels.full <- rev(expression(
   "", italic("Party & position (baseline = Labour left-wing)"), "Labour centre", "Conservative centre", "Conservative right-wing",
   "", italic("Local roots (baseline = lives elsewhere)"),"5 years in area", "20 years in area", "Grew up and lives in area", 
@@ -152,36 +263,70 @@ labels.sub <- expression("Grew up and lives in area", "20 years in area", "5 yea
                          italic("Local roots (baseline = lives elsewhere)"))
 
 
-# for x axis
+# label for x axis
+
 effect.label <- "Change in probability of MP being preferred,\n relative to baseline"
 
 
-
-amce
-
 ### Figure 3: AMCEs for all attributes
+
+# calling amce.tab to get the amce values for all these variables when used as
+# explanatory variable for mp.preferred
 
 res <- amce.tab(data = long.dat, 
                 variables = c("mp.partypos", "mp.localroots", "mp.const", "mp.influence", "mp.policy", "mp.gender")
                 , multi = F)
+
+# reversing the order of the factors for the various categories of amce, unsure
+# why
+
 res$category <- factor(as.character(res$category), levels = rev(as.character(res$category)), order =T)
 #write.csv(res, "amce-all.csv")# write results to csv file
 
 # Full plot for all attributes
+
+# since each had two spaces in between, the top one is not needed.
+
 res <- res[2:nrow(res),] # chop off top empty layer
 res <- subset(res, level != "baseline")# remove artificial 'baseline' rows
+
+# labels created above
+
 labels <- labels.full
+
+# initiates the plot. The attribute column is each variable which is why every
+# category within a variable has same color.
+
 ggplot(res, aes(x = category, y = AMCE, color = attribute)) + 
+  
+  # baseline of 0 to show how significant each coefficient is 
+  
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
-  geom_pointrange(aes(ymin = ci.lo, ymax = ci.hi), size = 0.75) + 
+  
+  # gives the standard error range and a point at the amce
+  
+  geom_pointrange(aes(ymin = ci.lo, ymax = ci.hi), size = 0.75) +
+  
+  # inputs better label for y axis (Will become x axis)
   labs(y = effect.label, x = "") + 
+  
+  # With the categories on x axis, everything is jumbled, thus flipping the
+  # coordinates so the categories are legible
+  
   coord_flip() + 
+  
+  # adding nice formating 
+  
   theme_bw() + 
   theme(axis.text = element_text(colour = "black")) +
   theme(legend.position = "none") +
   theme(text = element_text(size = 15)) +
   theme(axis.ticks.y = element_blank(), axis.text.y = element_text(hjust = 1), # remove ticks and justify
         axis.title.x = element_text(size = 13, vjust = 0)) + 
+  
+  # change labels from those from the dataset that were abbreivated to something
+  # more infomrative
+  
   scale_x_discrete(labels=labels)
 ggsave("figure3.eps", height = 7, width = 8)
 #ggsave("figure3.png", dpi = 600, height = 7, width = 8)
@@ -196,7 +341,13 @@ ggsave("figure3.eps", height = 7, width = 8)
 long.dat$choicetask <- factor(long.dat$comparison)
 
 # F-test
+
+# all of the variables 
+
 the.xvars <- c("mp.partypos", "mp.localroots", "mp.const", "mp.influence", "mp.policy", "mp.gender")
+
+# F-test for each variable listed above 
+
 for(i in 1:length(the.xvars)){
   x.var <- the.xvars[i]
   cat("##", x.var, "\n\n")
@@ -205,6 +356,8 @@ for(i in 1:length(the.xvars)){
   model.clus <- robcov(model, cluster = long.dat$ID, method = "efron")
   print(anova(model.clus, main.effect = T, ss = FALSE ), which = "subscripts"); cat("\n","\n")
 }
+
+# combining into one table 
 
 cat("\n","\n", "## Investigate any F-tests where p<.1:", "\n", "\n")
 model <- ols(mp.preferred ~ mp.policy*choicetask, data = long.dat, x = T, y = T)

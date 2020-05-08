@@ -25,19 +25,50 @@ library(car)
 
 
 
-### Create useful functions
+## Function to get predicted levels for different treatment combinations.
 
-## Function to get predicted levels for different treatment combinations
+
+# function to make predictions from the linear regression on a person with
+# different attributes. very much like postior_linpred.the Inputs for the
+# function are a regression object, covariate matrix for all the vairables in
+# the regression object, and the new data to perform predictions.
+
 predict.rob <- function(object, vcov,newdata){
+  
+  # extracting info from the regression object
+  
   tt <- terms(object)
+  
+  # check to make sure that the user input a new dataset
+  
   if(missing(newdata)){ newdata <- x$model }
   else {
+    
+    # takes the response variable, the y, out of the terms object
+    
     Terms <- delete.response(tt)
+    
+    # creates a dataframe were all the variables are constant save the local
+    # treatment and behavioral treatment. Each row of the matrix is a different
+    # combination of the two treatments.
+    
     m <- model.frame(Terms, newdata, na.action = na.pass, 
                      xlev = object$xlevels)
     if (!is.null(cl <- attr(Terms, "dataClasses"))) 
       .checkMFClasses(cl, m)
+    
+    # turns the dataframe m into a dataframe of 1's and 0's for each row of m.
+    # This now resembles how m will be fed into a regresson. For example the
+    # Intercept is 1 for every row. However, for rows of m where there was an
+    # interactions, the value will be 1 and when the interaction did not take
+    # place, there will be a 0. Thus, it is a sort of expanded version of the
+    # regression equation.
+    
     X <- model.matrix(Terms, m, contrasts.arg = object$contrasts)
+    
+    # checks for if any of the variables are NULL from the original m matrix.
+    # this adds in 0's for those instances where there are NULLs.
+    
     offset <- rep(0, nrow(X))
     if (!is.null(off.num <- attr(tt, "offset"))) 
       for (i in off.num) offset <- offset + eval(attr(tt, 
@@ -47,12 +78,23 @@ predict.rob <- function(object, vcov,newdata){
     mmDone <- FALSE
   }
   #m.mat <- model.matrix(x$terms,data=newdata)
+  
+  # saving the coefficients from the model 
+  
   m.coef <- object$coef
+  
+  # performing matrix multiplication to get the predicted value for each row,
+  # which is each a set person with set attributes experiencing each of the
+  # different treatments. Also does the same for the standard erorrs. 
+  
   fit <- as.vector(X %*% object$coef)
   se.fit <- sqrt(diag(X%*%vcov%*%t(X)))
+  
+  # finally the function combines the results of fit and se.fit to lists as the
+  # output.
+  
   return(list(fit=fit,se.fit=se.fit))
 }
-
 
 
 
@@ -66,6 +108,8 @@ d <- readRDS("./friends_neighbors_replication/study1data.rds")
 
 ### Check balance across treatment groups
 
+# graphics that display how these covariates are distributed across each treatment
+
 covariates <- subset(d, select = c(gender, agegrp, qualdegree, socgrade))
 
 bp1 <- bal.plot(treat = d$treatgroup,  obj = covariates, var.name = "gender") + ggtitle("Distribution balance for gender") + theme_gray() + xlab("")
@@ -73,6 +117,7 @@ bp2 <- bal.plot(treat = d$treatgroup,  obj = covariates, var.name = "agegrp") + 
 bp3 <- bal.plot(treat = d$treatgroup,  obj = covariates, var.name = "qualdegree") + ggtitle("Distribution balance for education") + theme_gray() + xlab("")
 bp4 <- bal.plot(treat = d$treatgroup,  obj = covariates, var.name = "socgrade") + ggtitle("Distribution balance for social grade") + theme_gray() + xlab("")
 
+#combines all 4 inton 1 plot
 
 pcomb <- plot_grid(bp1, bp2, bp3, bp4, align = "l", nrow = 4)
 
@@ -83,6 +128,7 @@ save_plot("figureC1.png", pcomb, dpi = 600, base_width = 8, base_height = 10)
 ### Randomization checks
 
 
+# peforms series of chi-squared tests on all of these variables 
 
 checkvars <- c("gender", "agegrp", "qualdegree", "socgrade")
 neatvars <- c("Gender", "Age group", "Education", "Social grade")
@@ -97,7 +143,7 @@ resdf <- do.call("rbind", chisqs)
 names(resdf) <- c("Respondent attribute", "Chi.sq", "df", "P-value")
 rownames(resdf) <- NULL
 
-### Now output as table
+# outputs table of all the various chi-squared tests in one 
 print(xtable(resdf, align = c("l", "l", "c", "c", "c"),
              digits = c(0,0, 2, 0,2),
              label = "tab:rchecks", caption = "Randomization checks"), 
@@ -108,6 +154,13 @@ print(xtable(resdf, align = c("l", "l", "c", "c", "c"),
 
 
 ### Table 2
+
+
+# The authors created various different models of the data. These models are
+# displayed in table 1 of the paper and model 4 is used throughout the paper.
+# The authors same the results of the models and the errors in separate objects
+# so that they can all be called togethered to create a stargazer table
+
 
 m1 <- lm(nickminusphil ~ localtreat*behtreatsimple, data = d)
 
@@ -126,7 +179,8 @@ m4 <- lm(nickminusphil ~ localtreat*behtreat +
          , data = d)
 se4 <- sqrt(diag(vcovHC(m4)))
 
-## Output to table
+# putting all of the models created above into one table 
+
 filename <- paste0("table2.html")
 stargazer(mget(paste0("m",1:4)),
           se = mget(paste0("se",1:4)),
@@ -159,45 +213,90 @@ stargazer(mget(paste0("m",1:4)),
 
 
 
-### Figure 1
+## author: Avg treatment effect of local roots with const and westmihn. info
 
+# the margins command will collect the average treatment effect for each of the
+# covaraites at every level of behavioral info. This is the crux of the
+# analysis. The one that is important to us is the avg effect for
+# localtreatLocal roots. Thus subetting to only keep the effects when local
+# treatment interacts with the levels of behavioral info.
 
-## Avg treatment effect of local roots with const and westmihn. info
 out <- summary(margins(m4, vcov = vcovHC(m4), 
                        at = list(behtreat = c("No behavioural info", "Const. focus", "Westmin. focus"))))
 out <- subset(out, factor == "localtreatLocal roots")
+
 margins.m4 <- out 
 
 
 ## make margins plot
 margins.comb <- margins.m4
+
+# changing the variables to be more informative in the graphic. Most were
+# abbreviated to save space in the original dataset
+
 margins.comb$behtreat.neat <- car:::recode(margins.comb$behtreat, 
                                            '"No behavioural info" = "Behavioral information treatment --\\nNo information (Vignettes 1-2)";
                                            "Westmin. focus" = "Behavioral information treatment --\\nLow behavioral localism (Vignettes 5-6)";
                                            "Const. focus" = "Behavioral information treatment --\\nHigh behavioral localism (Vignettes 3-4)"')
-                                           #as.factor.result = TRUE)
+#as.factor.result = TRUE)
 margins.comb$behtreat.neat <- factor(sub(" --", ":", margins.comb$behtreat.neat),
                                      levels = c("Behavioral information treatment:\nNo information (Vignettes 1-2)", 
                                                 "Behavioral information treatment:\nLow behavioral localism (Vignettes 5-6)",
                                                 "Behavioral information treatment:\nHigh behavioral localism (Vignettes 3-4)"
                                      ))
-p1 <- ggplot(margins.comb, aes(x = factor, y = AME)) + 
+
+# the first grahic has two parts that are set side by side. Thus, it is
+# necessary to save the plot into an object p1.
+
+p1 <-
+  
+  # plotting the average treatment effect when a candidate is local for each
+  # level of behavioral info; however behavioral info is not yet incorporated
+  # into the graph.
+  
+  ggplot(margins.comb, aes(x = factor, y = AME)) + 
+  
+  # line at 0 to show all are results are significant
+  
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
-  geom_linerange(aes(x=factor, xend=factor, ymin=lower, ymax=upper), size = 0.6) +
+  
+  # show range of the effect 
+  
+  geom_linerange(aes(x=factor, ymin=lower, ymax=upper), size = 0.6) +
+  
+  # point estimate for the averages 
+  
   geom_point(size = 3.5, shape = 21, fill = "white") +
   labs(x = "", y = "") + 
+  
+  # flipping the coordinates because factors is currently all the same. Also
+  # aesthetically more pleasing to go horizontally
+  
   coord_flip() +
+  
+  # needing the facet wrap to add the info for each of the behavioral levels.
+  # Currently everything was graphed on same axis and the lines were on top of
+  # each other. This separates the treatment into each combo of local roots with
+  # behavioral roots.
+  
   facet_wrap( ~ behtreat.neat, ncol = 1) + 
+  
+  # manipulating aesthetics and adding a title for the final output.
+  
   theme_bw() +
   theme(legend.position = "bottom") +
   theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) + 
-  ggtitle("(b) Effect of MP local roots treatment") 
-
-
-p1
-
+  ggtitle("(b)") 
 
 ## predlevels for m4
+
+# dataframe created for predictions for the predict.rob function we made
+# earlier. The table will consistent of a combinations of all local roots and
+# behavioral treatments levels (2,3 so 6 row in total). The table then then is
+# filled with the most common value for each of the voter characterstics (most
+# common age, gender...). Thus the table is one of the treatments effects on the
+# most common of individual from the sample.
+
 newdf <- data.frame(expand.grid(localtreat = factor(c("No local roots", "Local roots"), 
                                                     levels = levels(d$localtreat)),
                                 behtreat = factor(levels(d$behtreat), levels = levels(d$behtreat))
@@ -211,6 +310,14 @@ socgrade = factor(levels(d$socgrade)[which.max(table(d$socgrade))],
 qual = factor(levels(d$qual)[which.max(table(d$qual))], 
               levels = levels(d$qual))
 )
+
+
+
+# using the function created above to get predictions for each of the rows of
+# newdf. The output of pred.rob saved in preds is a list. The next step is
+# adding those values into the newdf dataframe to make the second part of
+# graphic 1.
+
 preds <- predict.rob(m4, vcov = vcovHC(m4), newdata = newdf)
 newdf$yhat <- preds$fit
 newdf$se.yhat <- preds$se.fit
@@ -220,28 +327,35 @@ predlevels.m4 <- newdf
 
 
 ## make predlevels plot
+
+# releveling the variables to be more informative in the graphic. Most were
+# abbreviated to save space in the original dataset
+
 predlevels.comb <- predlevels.m4
 predlevels.comb$behtreat.neat <- car:::recode(predlevels.comb$behtreat, 
                                               '"No behavioural info" = "Behavioral information treatment --\\nNo information (Vignettes 1-2)";
                                               "Westmin. focus" = "Behavioral information treatment --\\nLow behavioral localism (Vignettes 5-6)";
                                               "Const. focus" = "Behavioral information treatment --\\nHigh behavioral localism (Vignettes 3-4)"')
-                                              #as.factor.result = TRUE)
+#as.factor.result = TRUE)
 predlevels.comb$behtreat.neat <- factor(sub(" --", ":", predlevels.comb$behtreat.neat),
                                         levels = c("Behavioral information treatment:\nNo information (Vignettes 1-2)", 
                                                    "Behavioral information treatment:\nLow behavioral localism (Vignettes 5-6)",
                                                    "Behavioral information treatment:\nHigh behavioral localism (Vignettes 3-4)"
                                         ))
+# second plot is pretty much identical to the first plot created. This one is
+# just with predicted values for the most common voter profile instead of real
+# data.
 
-p2 <- ggplot(predlevels.comb, aes(x = localtreat, y = yhat)) + 
+p2 <-  ggplot(predlevels.comb, aes(x = localtreat, y = yhat)) + 
   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5) +
-  geom_linerange(aes(x=localtreat, xend=localtreat, ymin=lo, ymax=hi), size = 0.6) +
+  geom_linerange(aes(x=localtreat, ymin=lo, ymax=hi), size = 0.6) +
   geom_point(size = 3.5, shape = 21, fill = "white") +
   labs(x = "", y = "") + 
   coord_flip() +
   facet_wrap( ~ behtreat.neat, ncol = 1) + 
   theme_bw() +
   theme(legend.position = "bottom") + 
-  ggtitle("(a) Predicted relative rating")
+  labs(title = "(a)")
 
 
 ## Now combine aspects of above plots into 3 x 2 plot
@@ -250,7 +364,8 @@ pcomb <- plot_grid(p2, p1, align = "h", rel_widths = c(1,0.8))
 save_plot("figure1.eps", pcomb, base_width = 8, base_height = 4)
 
 
-
+### All of the same analysis as above just with a different dependent variable.
+### Instead of nickminusphil, the depedent variable is just nickscores
 
 ### Table B1
 
@@ -399,6 +514,9 @@ save_plot("figureB1.png", pcomb, dpi = 600, base_width = 8, base_height = 4)
 #save_plot("figureB1.eps", pcomb, base_width = 8, base_height = 4)
 
 
+
+### All of the same analysis as above just with a different dependent variable.
+### Instead of nickminusphil, the depedent variable is a binary variable
 
 
 ### Table B2
